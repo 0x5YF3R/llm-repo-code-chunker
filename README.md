@@ -78,7 +78,7 @@ python llm_text_compressor.py --large_text <path_to_text_file> --token_target <t
 ### Example Usage
 
 ```bash
-python llm_text_compressor.py --large_text sample_files/us_constitution.txt --token_target 2000 --compressor_type keywords --model_name gpt-4o-mini --json
+python llm_text_compressor.py --large_text sample_files/us_constitution.txt --token_target 2000 --compressor_type facts_database --model_name gpt-4o-mini --json --return_str
 ```
 
 This command will take the `us_constitution.txt` file, compress it to approximately 2000 tokens, and extract keywords in JSON format using the model `gpt-4o-mini`.
