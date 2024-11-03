@@ -9,7 +9,7 @@ def main():
     parser = argparse.ArgumentParser(description='Compress large text using OpenAI API.')
     parser.add_argument('--large_text', type=str, required=True, help='Path to the large text file.')
     parser.add_argument('--token_target', type=int, required=True, help='Target number of tokens for the final output.')
-    parser.add_argument('--compressor_type', type=str, required=True, choices=['general', 'bullet_points', 'key_points', 'abstract', 'outline'], help='Type of compression to perform.')
+    parser.add_argument('--compressor_type', type=str, required=True, choices=['general', 'bullet_points', 'key_points', 'paraphrase', 'outline', 'keywords'], help='Type of compression to perform.')
     parser.add_argument('--json', action='store_true', help='Output JSON format if set.')
     args = parser.parse_args()
 
@@ -80,9 +80,11 @@ def get_prompts(is_json):
         'general': "Please summarize the following text to approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
         'bullet_points': "Please create a bullet point summary of the following text, aiming for approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
         'key_points': "Please extract the key points from the following text, aiming for approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
-        'abstract': "Please generate an abstract for the following text, aiming for approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
+        'paraphrase': "Please paraphrase the following text, aiming for approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
         'outline': "Please create a concise outline with headlines and subheadings for the following text, aiming for approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
+        'keywords': "Distill the following text into a list of keywords or keyphrases, aiming for approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
     }
+
     if is_json:
         for key in prompts:
             prompts[key] = prompts[key].replace("{json_spec}", " and provide the output in JSON format")
@@ -91,14 +93,19 @@ def get_prompts(is_json):
             prompts[key] = prompts[key].replace("{json_spec}", "")
     return prompts
 
-def compute_target_word_count_per_chunk(chunk_tokens_len, total_tokens_len, token_target):
-    # Compute the proportion of the chunk
+def compute_target_word_count_per_chunk(chunk_tokens_len, total_tokens_len, token_target, aggression_factor=1.2):
+    # Compute the proportion of the chunk relative to the entire text
     chunk_proportion = chunk_tokens_len / total_tokens_len
-    # Compute the target total output tokens per chunk
-    target_tokens_per_chunk = chunk_proportion * token_target
+    
+    # Compute the target total output tokens per chunk, applying the aggression factor
+    target_tokens_per_chunk = (chunk_proportion * token_target) / aggression_factor
+    
     # Convert tokens to words, assuming average tokens per word is 1.3
     target_words_per_chunk = int(target_tokens_per_chunk / 1.3)
-    return max(target_words_per_chunk, 50)  # Ensure minimum word count
+    
+    # Return the calculated target word count without a minimum constraint
+    return target_words_per_chunk
+
 
 def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json):
     # Prepare the prompt
