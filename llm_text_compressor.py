@@ -20,7 +20,7 @@ def main():
                             '  keywords: Extracts key terms and phrases representing the core content.'
                         ))
     parser.add_argument('--json', action='store_true', help='Output JSON format if set.')
-    parser.add_argument('--model_name', type=str, default='gpt-3.5-turbo', help='OpenAI model to use for compression.')
+    parser.add_argument('--model_name', type=str, default='gpt-4o-mini', help='OpenAI model to use for compression.')
 
     args = parser.parse_args()
 
