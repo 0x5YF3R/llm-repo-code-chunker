@@ -58,7 +58,7 @@ This script reads a large text file, splits it into manageable chunks, and compr
 ## Usage
 
 ```bash
-python llm_text_compressor.py --large_text <path_to_text_file> --token_target <token_count> --compressor_type <type> [--json]
+python llm_text_compressor.py --large_text <path_to_text_file> --token_target <token_count> --compressor_type <type> [--json] [--return_str]
 ```
 
 - `--large_text`: Path to the large text file you want to compress (e.g., `us_constitution.txt`).
