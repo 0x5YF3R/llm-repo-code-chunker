@@ -19,8 +19,8 @@ def main():
                             '  outline: Creates an outline with headlines and subheadings to capture structure.\n'
                             '  keywords: Extracts key terms and phrases representing the core content.'
                         ))
-
     parser.add_argument('--json', action='store_true', help='Output JSON format if set.')
+    parser.add_argument('--model_name', type=str, default='gpt-3.5-turbo', help='OpenAI model to use for compression.')
 
     args = parser.parse_args()
 
@@ -37,17 +37,39 @@ def main():
         print(f"The file {args.large_text} does not exist.")
         sys.exit(1)
 
+    # Define model token limits
+    MODEL_TOKEN_LIMITS = {
+        'gpt-4o': 128000,
+        'gpt-4o-mini': 128000,
+        'gpt-4-turbo': 128000,
+        'gpt-4': 8192,
+        'gpt-3.5-turbo': 16385,
+        'gpt-3.5-turbo-instruct': 4096,
+        'o1-preview': 128000,
+        'o1-mini': 128000
+    }
+
+    model_name = args.model_name
+
+    # Default to 4096 if model not found. 
+    # Lower token limit to avoid "maximum context length" errors.
+    model_max_tokens = MODEL_TOKEN_LIMITS.get(model_name, 4096) - 1000
+    
+    # Unpack system message and prompts
+    system_message, prompts = get_prompts(args.json)
+
     # Initialize tiktoken encoding
     try:
-        encoding = tiktoken.encoding_for_model('gpt-4o-mini')
+        encoding = tiktoken.encoding_for_model(model_name)
     except KeyError:
         encoding = tiktoken.get_encoding('cl100k_base')
 
+    # Calculate tokens reserved for prompt
+    tokens_reserved_for_prompt = calculate_prompt_tokens(system_message, prompts, encoding)
+    max_chunk_size = model_max_tokens - tokens_reserved_for_prompt
+
     # Count tokens in the large text
     total_tokens = len(encoding.encode(large_text))
-
-    # Unpack system message and prompts
-    system_message, prompts = get_prompts(args.json)
 
     # Compress the text iteratively until it's under token_target
     compressed_text = large_text
@@ -59,13 +81,13 @@ def main():
 
     while current_tokens > args.token_target and iteration < max_iterations:
         print(f"Iteration {iteration + 1}: Current token count: {current_tokens}, target: {args.token_target}. Compressing...")
-        chunks, chunk_token_counts = split_text_into_chunks(compressed_text, args.token_target, encoding)
+        chunks, chunk_token_counts = split_text_into_chunks(compressed_text, max_chunk_size, encoding)
         total_chunk_tokens = sum(chunk_token_counts)
         compressed_chunks = []
         for idx, (chunk, chunk_tokens_len) in enumerate(zip(chunks, chunk_token_counts)):
             target_word_count = compute_target_word_count_per_chunk(chunk_tokens_len, total_chunk_tokens, args.token_target, aggression_factor)
             print(f"Compressing chunk {idx + 1}/{len(chunks)} with target word count {target_word_count}...")
-            compressed_chunk = compress_chunk(chunk, args.compressor_type, target_word_count, prompts, args.json, system_message)
+            compressed_chunk = compress_chunk(chunk, args.compressor_type, target_word_count, prompts, args.json, system_message, model_name)
             compressed_chunks.append(compressed_chunk)
         compressed_text = '\n'.join(compressed_chunks)
         current_tokens = len(encoding.encode(compressed_text))
@@ -85,13 +107,22 @@ def main():
     print(f"Compression complete. Output saved to {output_file}.")
 
 
-def split_text_into_chunks(text, token_target, encoding):
-    # Split the text into chunks of at most token_target tokens
+def calculate_prompt_tokens(system_message, prompts, encoding):
+    max_prompt_length = 0
+    for prompt in prompts.values():
+        full_prompt = system_message + prompt.format(target_word_count=0, chunk_string="")
+        prompt_tokens = len(encoding.encode(full_prompt))
+        if prompt_tokens > max_prompt_length:
+            max_prompt_length = prompt_tokens
+    #  
+    return max_prompt_length
+
+
+def split_text_into_chunks(text, max_chunk_size, encoding):
+    # Split the text into chunks of at most max_chunk_size tokens
     tokens = encoding.encode(text)
     chunks = []
     chunk_token_counts = []
-    max_chunk_size = token_target
-
     start = 0
     while start < len(tokens):
         end = min(start + max_chunk_size, len(tokens))
@@ -132,16 +163,16 @@ def get_prompts(is_json):
 def compute_target_word_count_per_chunk(chunk_tokens_len, total_tokens_len, token_target, aggression_factor):
     # Compute the proportion of the chunk relative to the entire text
     chunk_proportion = chunk_tokens_len / total_tokens_len if total_tokens_len > 0 else 0
-    
+
     # Compute the target total output tokens per chunk, applying the aggression factor
     target_tokens_per_chunk = (chunk_proportion * token_target) / aggression_factor if aggression_factor != 0 else 0
-    
+
     # Convert tokens to words, assuming average tokens per word is 1.3
     target_words_per_chunk = max(int(target_tokens_per_chunk / 1.3), 1)
-    
+
     return target_words_per_chunk
 
-def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, system_message):
+def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, system_message, model_name):
     # Prepare the prompt
     prompt = prompts[compressor_type].format(
         target_word_count=target_word_count,
@@ -152,7 +183,7 @@ def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, 
     client = OpenAI()
     try:
         response = client.chat.completions.create(
-            model='gpt-4o-mini',
+            model=model_name,
             messages=[
                 {
                     'role': 'system',
