@@ -95,11 +95,6 @@ The `compressor_type` parameter lets you choose the method of compression. Hereâ
 
 You can use a sample text file, like the U.S. Constitution, for testing. Save it as `us_constitution.txt` and place it in the project directory.
 
-Example content of `us_constitution.txt`:
-```
-We the People of the United States, in Order to form a more perfect Union, establish Justice, insure domestic Tranquility...
-```
-
 ## Customization
 
 The script's compression algorithm can be fine-tuned by adjusting the `token_target` and compression type, as well as the aggression factor, which increases by 10% with each iteration if the target token count is not met.
