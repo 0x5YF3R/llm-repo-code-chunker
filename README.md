@@ -71,8 +71,9 @@ python llm_text_compressor.py --large_text <path_to_text_file> --token_target <t
   - `critical_analysis`
   - `facts_database`
   - `keywords_keyphrases`
-- `--json`: Optional. Use this flag to output in JSON format.
 - `--model_name`: Optional. This is `gpt-4o-mini` by default.
+- `--json`: Optional. Use this flag to output in JSON format.
+- `--return_str`: Optional. Use this flag to return the result as a string.
 
 ### Example Usage
 
