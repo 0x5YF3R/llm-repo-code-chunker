@@ -10,16 +10,16 @@ def main():
     parser.add_argument('--large_text', type=str, required=True, help='Path to the large text file.')
     parser.add_argument('--token_target', type=int, required=True, help='Target number of tokens for the final output.')
     parser.add_argument(
-        '--compressor_type', type=str, required=True,
+        '--compressor_type', type=str, required=False, default='narrative_summary',
         choices=[
-            'narrative_summary', 'bullet_points', 'contrast_compare', 'outline',
+            'narrative_summary', 'bullet_points', 'glossary_terms', 'outline',
             'critical_analysis', 'facts_database', 'keywords_keyphrases'
         ],
         help=(
             "Type of compression to perform:\n"
-            "  narrative_summary: Provides a readable story-like summary.\n"
+            "  narrative_summary: Provides a readable story-like summary. This is the default.\n"
             "  bullet_points: Summarizes text using bullet points.\n"
-            "  contrast_compare: Highlights contrasting ideas or viewpoints.\n"
+            "  glossary_terms: Extracts and defines key terms as a glossary.\n"
             "  outline: Structures the summary with headings and subheadings.\n"
             "  critical_analysis: Offers analysis on strengths and weaknesses.\n"
             "  facts_database: Extracts factual information only.\n"
@@ -155,7 +155,7 @@ def get_prompts(is_json):
     prompts = {
         'narrative_summary': "Provide a concise narrative that conveys the main ideas and story arc of the following text, aiming for around {target_word_count} words{json_spec}. Structure it as if telling the story to someone unfamiliar with the topic:\n\n{chunk_string}",
         'bullet_points': "Summarize the following text into clear bullet points, with each point capturing an essential idea. Aim for approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
-        'contrast_compare': "Extract and highlight the main arguments, contrasting ideas, or viewpoints presented in the following text. Aim for around {target_word_count} words{json_spec}, clearly differentiating between perspectives:\n\n{chunk_string}",
+        'glossary_terms': "Extract and define key terms and concepts from the following text, presenting them as a glossary list. Aim for around {target_word_count} words{json_spec}:\n\n{chunk_string}",
         'outline': "Create a structured outline with headings and subheadings, capturing the primary structure and flow of the text. Aim for around {target_word_count} words{json_spec}. Use hierarchical headings to emphasize key points and their relationships:\n\n{chunk_string}",
         'critical_analysis': "Provide a brief analysis of the main points, discussing strengths, weaknesses, or important themes present in the text. Aim for around {target_word_count} words{json_spec}:\n\n{chunk_string}",
         'facts_database': "Extract factual statements from the following text, summarizing key details, statistics, and verifiable information. Aim for around {target_word_count} words{json_spec}:\n\n{chunk_string}",

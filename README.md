@@ -63,10 +63,10 @@ python llm_text_compressor.py --large_text <path_to_text_file> --token_target <t
 
 - `--large_text`: Path to the large text file you want to compress (e.g., `us_constitution.txt`).
 - `--token_target`: Target number of tokens for the final output.
-- `--compressor_type`: Type of compression. Options include:
-  - `narrative_summary`
+- `--compressor_type`: Optional. Type of compression. Options include:
+  - `narrative_summary` (Default)
   - `bullet_points`
-  - `contrast_compare`
+  - `glossary_terms`
   - `outline`
   - `critical_analysis`
   - `facts_database`
@@ -89,7 +89,7 @@ The `compressor_type` parameter lets you choose the method of compression. Hereâ
 
 - **narrative_summary**: Provides a readable, story-like summary that conveys the main ideas in prose format.
 - **bullet_points**: Summarizes the text using bullet points for clarity and quick reading.
-- **contrast_compare**: Highlights contrasting ideas, arguments, or viewpoints within the text, showcasing different perspectives.
+- **glossary_terms**: Extracts and defines key terms as a glossary.
 - **outline**: Structures the summary with headings and subheadings to capture the flow and main points.
 - **critical_analysis**: Analyzes the main points, discussing strengths, weaknesses, and underlying themes.
 - **facts_database**: Extracts factual statements, key details, and verifiable information from the text.
