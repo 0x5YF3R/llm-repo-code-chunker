@@ -1,7 +1,7 @@
 
 # LLM Text Compressor
 
-A Python script designed to compress large text files, making them more manageable for use within limited LLM context windows. Large texts can quickly consume valuable token space, limiting the space available for additional instructions, context, or responses. This script uses various compression techniques (e.g., bullet points, key points, paraphrasing) to reduce the text to a target token size, allowing you to include it as a file or within a prompt without the risk of unintentionally truncating the end of a long document. By optimizing the token limit, this tool helps ensure more effective use of context for improved results.
+A Python script designed to compress large text files, optimizing them for use within limited LLM context windows. Large texts can quickly consume valuable token space, reducing capacity for additional instructions, context, or responses. This script offers various compression techniques—such as bullet points, key points, and paraphrasing—to condense content to a target token size, minimizing the risk of truncation. By maximizing information density within token limits, this tool enables more effective use of context for clearer and more relevant output.
 
 ## Table of Contents
 - [Overview](#overview)
