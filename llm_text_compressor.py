@@ -95,8 +95,13 @@ def main():
         for idx, (chunk, chunk_tokens_len) in enumerate(zip(chunks, chunk_token_counts)):
             target_word_count = compute_target_word_count_per_chunk(chunk_tokens_len, total_chunk_tokens, args.token_target, aggression_factor)
             print(f"Compressing chunk {idx + 1}/{len(chunks)} with target word count {target_word_count}...")
-            compressed_chunk = compress_chunk(chunk, args.compressor_type, target_word_count, prompts, args.json, system_message, model_name)
-            compressed_chunks.append(compressed_chunk)
+
+        compressed_chunk = compress_chunk(
+            chunk, args.compressor_type, target_word_count, prompts,
+            args.json, system_message, model_name, encoding, model_max_tokens
+        )
+
+        compressed_chunks.append(compressed_chunk)
         compressed_text = '\n'.join(compressed_chunks)
         current_tokens = len(encoding.encode(compressed_text))
         # Increase aggression_factor by 10% for the next iteration
@@ -147,19 +152,20 @@ def get_prompts(is_json):
 
     # Define a system message to establish context and ensure consistency
     system_message = (
-        "You are a compression assistant. Your task is to compress text to a specified word count or summary format. "
-        "Follow the specified compression style, using concise language while retaining essential details."
+        "You are a compression assistant. Compress the provided text to a target word count "
+        "or format, outputting only the compressed content itself with no extra introductory "
+        "or concluding statements. Focus solely on retaining essential information."
     )
 
     # Define the prompts
     prompts = {
-        'auto_detect': "Review the following text and choose a mode of compression that best suits the type of content provided, aiming for around {target_word_count} words{json_spec}. Here is the text to analysize and compress:\n\n{chunk_string}",
-        'bullet_points': "Summarize the following text into clear bullet points, with each point capturing an essential idea. Aim for approximately {target_word_count} words{json_spec}:\n\n{chunk_string}",
-        'glossary_terms': "Extract and define key terms and concepts from the following text, presenting them as a glossary list. Aim for around {target_word_count} words{json_spec}:\n\n{chunk_string}",
-        'outline': "Create a structured outline with headings and subheadings, capturing the primary structure and flow of the text. Aim for around {target_word_count} words{json_spec}. Use hierarchical headings to emphasize key points and their relationships:\n\n{chunk_string}",
-        'critical_analysis': "Provide a brief analysis of the main points, discussing strengths, weaknesses, or important themes present in the text. Aim for around {target_word_count} words{json_spec}:\n\n{chunk_string}",
-        'facts_database': "Extract factual statements from the following text, summarizing key details, statistics, and verifiable information. Aim for around {target_word_count} words{json_spec}:\n\n{chunk_string}",
-        'keywords_keyphrases': "List key terms and phrases that represent the main ideas of the following text. Limit the list to approximately {target_word_count} words{json_spec}:\n\n{chunk_string}"
+        'auto_detect': "Compress the following text to approximately {target_word_count} words, focusing solely on key details. Only output the compressed text, without any introductory or concluding statements:\n\n{chunk_string}",
+        'bullet_points': "Summarize the following text into clear bullet points, focusing solely on essential ideas. Aim for approximately {target_word_count} words. Only output the list, without any introductory or concluding statements:\n\n{chunk_string}",
+        'glossary_terms': "Extract and define key terms from the following text, presenting them as a glossary. Only list the glossary terms, without any introductory or concluding statements:\n\n{chunk_string}",
+        'outline': "Create a structured outline with headings and subheadings to capture the primary structure and flow of the text. Only output the outline itself, with no introductory or concluding statements. Limit the outline to approximately {target_word_count} words:\n\n{chunk_string}",
+        'critical_analysis': "Provide a brief analysis of the main points in the following text. Only output the analysis itself, without any introductory or concluding statements. Aim for around {target_word_count} words:\n\n{chunk_string}",
+        'facts_database': "Extract factual statements from the following text, summarizing key details, statistics, and verifiable information. Only list the facts without any introductory or concluding statements. Aim for approximately {target_word_count} words:\n\n{chunk_string}",
+        'keywords_keyphrases': "List key terms and phrases that represent the main ideas of the following text. Only output the list of keywords and phrases, without any introductory or concluding statements. Limit the list to approximately {target_word_count} words:\n\n{chunk_string}"
     }
 
     if is_json:
@@ -183,13 +189,24 @@ def compute_target_word_count_per_chunk(chunk_tokens_len, total_tokens_len, toke
 
     return target_words_per_chunk
 
-def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, system_message, model_name):
+def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, system_message, model_name, encoding, model_max_tokens):
     # Prepare the prompt
     prompt = prompts[compressor_type].format(
         target_word_count=target_word_count,
         chunk_string=chunk
     )
     
+    # Calculate the number of tokens in the prompt
+    prompt_tokens = len(encoding.encode(system_message + prompt))
+    
+    # Estimate the number of tokens for the completion
+    estimated_completion_tokens = int(target_word_count * 1.3)
+    
+    # Calculate the max tokens for the completion
+    max_tokens = min(model_max_tokens - prompt_tokens, estimated_completion_tokens + 100)
+    if max_tokens < 1:
+        max_tokens = 1  # Ensure at least 1 token
+
     # Call OpenAI API with system message included
     client = OpenAI()
     try:
@@ -204,7 +221,8 @@ def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, 
                     'role': 'user',
                     'content': prompt
                 }
-            ]
+            ],
+            max_tokens=max_tokens
         )
         compressed_chunk = response.choices[0].message.content.strip()
     except Exception as e:
@@ -212,6 +230,7 @@ def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, 
         compressed_chunk = ""
     
     return compressed_chunk
+
 
 if __name__ == '__main__':
     main()
