@@ -1,11 +1,20 @@
-import os
-import argparse
-import tiktoken
-from openai import OpenAI
-import sys
+import os  # Lets us work with the computer's files and environment settings
+import argparse  # Helps us get information from the person running the program
+import tiktoken  # Counts how many tokens (pieces of words) are in the text
+from openai import OpenAI  # Lets us talk to the OpenAI computer program
+import sys  # Lets us stop the program if something goes wrong
+
+# This program helps make big pieces of text much shorter using a smart computer program called OpenAI's GPT models.
+# It can turn a long text into bullet points, a glossary, an outline, or just a shorter version, depending on what you want.
+# You can choose how short you want the text to be, and the program will keep making it shorter until it fits your goal.
+# Let's go through the code step by step!
+
+# This is the main function where everything starts
+# It gets the information from the user, checks the files, and runs the compression
 
 def main():
     # Parse command-line arguments
+    # This part sets up the rules for what information the user needs to give the program
     parser = argparse.ArgumentParser(description='Compress large text using OpenAI API.')
     parser.add_argument('--large_text', type=str, required=True, help='Path to the large text file.')
     parser.add_argument('--token_target', type=int, required=True, help='Target number of tokens for the final output.')
@@ -33,11 +42,13 @@ def main():
     args = parser.parse_args()
 
     # Check if OpenAI API key is set
+    # The program needs a secret key to talk to OpenAI. If it's missing, we stop.
     if not os.getenv('OPENAI_API_KEY'):
         print("Please set the OPENAI_API_KEY environment variable.")
         sys.exit(1)
 
     # Read the large text file
+    # Try to open the file the user gave us. If it doesn't exist, stop and tell the user.
     try:
         with open(args.large_text, 'r', encoding='utf-8') as f:
             large_text = f.read()
@@ -46,6 +57,7 @@ def main():
         sys.exit(1)
 
     # Define model token limits
+    # Each OpenAI model can only handle a certain amount of text at once. We set those limits here.
     MODEL_TOKEN_LIMITS = {
         'gpt-4o': 128000,
         'gpt-4o-mini': 128000,
@@ -64,15 +76,18 @@ def main():
     model_max_tokens = MODEL_TOKEN_LIMITS.get(model_name, 4096) - 1000
     
     # Unpack system message and prompts
+    # Get the instructions and message to send to the OpenAI model
     system_message, prompts = get_prompts(args.json)
 
     # Initialize tiktoken encoding
+    # This helps us count how many tokens are in our text
     try:
         encoding = tiktoken.encoding_for_model(model_name)
     except KeyError:
         encoding = tiktoken.get_encoding('cl100k_base')
 
     # Calculate tokens reserved for prompt
+    # We need to save some space for the instructions we send to the model
     tokens_reserved_for_prompt = calculate_prompt_tokens(system_message, prompts, encoding)
     max_chunk_size = model_max_tokens - tokens_reserved_for_prompt
 
@@ -80,6 +95,7 @@ def main():
     total_tokens = len(encoding.encode(large_text))
 
     # Compress the text iteratively until it's under token_target
+    # We keep making the text shorter until it fits the size the user wants
     compressed_text = large_text
     current_tokens = total_tokens
     iteration = 0
@@ -109,6 +125,7 @@ def main():
         print("Compression successful.")
 
     # Output the result
+    # If the user wants the result as a string, print it. Otherwise, save it to a file.
     if args.return_str:
         print(compressed_text)  # Outputs compressed text directly as a string
     else:
@@ -116,6 +133,9 @@ def main():
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(compressed_text)
         print(f"Compression complete. Output saved to {output_file}.")
+
+# This function counts how many tokens are in the instructions we send to the model
+# We want to make sure we don't go over the model's limit
 
 def calculate_prompt_tokens(system_message, prompts, encoding):
     max_prompt_length = 0
@@ -127,6 +147,8 @@ def calculate_prompt_tokens(system_message, prompts, encoding):
     #  
     return max_prompt_length
 
+# This function splits the big text into smaller pieces so the model can handle them
+# Each chunk is small enough to fit in the model's memory
 
 def split_text_into_chunks(text, max_chunk_size, encoding):
     # Split the text into chunks of at most max_chunk_size tokens
@@ -142,6 +164,9 @@ def split_text_into_chunks(text, max_chunk_size, encoding):
         chunk_token_counts.append(len(chunk_tokens))
         start = end
     return chunks, chunk_token_counts
+
+# This function gives us the instructions and system message for the model
+# The instructions change depending on what kind of summary the user wants
 
 def get_prompts(is_json):
 
@@ -171,6 +196,9 @@ def get_prompts(is_json):
             
     return system_message, prompts
 
+# This function figures out how many words each chunk should have after compression
+# It tries to make each chunk smaller, but not too small, so the final result fits the user's goal
+
 def compute_target_word_count_per_chunk(chunk_tokens_len, total_tokens_len, token_target, aggression_factor):
     # Compute the proportion of the chunk relative to the entire text
     chunk_proportion = chunk_tokens_len / total_tokens_len if total_tokens_len > 0 else 0
@@ -182,6 +210,9 @@ def compute_target_word_count_per_chunk(chunk_tokens_len, total_tokens_len, toke
     target_words_per_chunk = max(int(target_tokens_per_chunk / 1.3), 1)
 
     return target_words_per_chunk
+
+# This function sends a chunk of text to the OpenAI model and gets back the compressed version
+# It builds the prompt, sends it, and returns the answer
 
 def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, system_message, model_name):
     # Prepare the prompt
@@ -213,5 +244,6 @@ def compress_chunk(chunk, compressor_type, target_word_count, prompts, is_json, 
     
     return compressed_chunk
 
+# This makes sure the main function runs if we start the program from the command line
 if __name__ == '__main__':
     main()

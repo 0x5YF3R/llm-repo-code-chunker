@@ -55,9 +55,9 @@ The final artifact (Markdown briefing or pseudo‑code file) interleaves survivi
 
 ```bash
 #Clone this repository:
-git clone https://github.com/yourusername/llm-codebase-compressor.git
+git clone https://github.com/0x5YF3R/llm-repo-code-chunker.git
 #Move to the working directory:
-cd llm-codebase-compressor
+cd llm-repo-code-chunker
 #Install the required Python packages:
 pip install -r requirements.txt
 #Set up your OpenAI API key as an environment variable
