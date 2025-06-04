@@ -36,8 +36,9 @@ The final artifact (Markdown briefing or pseudo‑code file) interleaves survivi
 - **Semantic Deduplication**: Collapses boilerplate, repeated idioms, and copy‑pasted functions into single tags or references.  
 - **Line‑Number Mapping**: Maintains original line numbers beside summaries so you can jump back to the full code with ease.  
 - **Multiple Output Formats**: Choose Markdown, lightweight pseudo‑code, or raw JSON for downstream tooling.  
-- **Configurable Aggression Factor**: Automatically ratchets compression strength if the target budget isn’t reached.  
-- **Selective Inclusion**: CLI switches to include or exclude tests, vendor folders, generated code, or specific file globs.  
+- **Configurable Aggression Factor**: Automatically ratchets compression strength if the target budget isn’t reached.
+- **Selective Inclusion**: CLI switches to include or exclude tests, vendor folders, generated code, or specific file globs.
+- **Line-by-Line Code Explanation**: `llm_code_explainer.py` writes each Python file with short explanatory comments.
 
 ---
 
@@ -96,6 +97,17 @@ python llm_codebase_compressor.py \
 ```
 
 The command produces a flask_compressed.md file containing a 16 k‑token architectural briefing of Flask—core modules, call graph highlights, and summarized algorithms—while skipping tests and examples.
+
+### Line-by-Line Explanation
+
+```bash
+python llm_code_explainer.py \
+    --repo_url https://github.com/example/project.git \
+    --repo_path ./project \
+    --output_base_path ./explained_project
+```
+
+The explainer clones the repository (if needed) and writes each Python file under `./explained_project` with explanatory comments prepended to each line.
 Compression Modes
 
     auto_detect: Scans repository size, language mix, and complexity to choose an appropriate strategy.
