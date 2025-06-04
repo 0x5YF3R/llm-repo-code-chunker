@@ -39,6 +39,7 @@ The final artifact (Markdown briefing or pseudo‑code file) interleaves survivi
 - **Configurable Aggression Factor**: Automatically ratchets compression strength if the target budget isn’t reached.
 - **Selective Inclusion**: CLI switches to include or exclude tests, vendor folders, generated code, or specific file globs.
 - **Line-by-Line Code Explanation**: `llm_code_explainer.py` writes each Python file with short explanatory comments.
+- **General Text Compression**: `llm_text_compressor.py` condenses long text files down to a chosen token target.
 
 ---
 
@@ -108,6 +109,17 @@ python llm_code_explainer.py \
 ```
 
 The explainer clones the repository (if needed) and writes each Python file under `./explained_project` with explanatory comments prepended to each line.
+
+### Text Compression
+
+```bash
+python llm_text_compressor.py \
+    --large_text sample_files/us_constitution.txt \
+    --token_target 800 \
+    --compressor_type outline
+```
+
+The text compressor condenses the U.S. Constitution into a short outline and saves the result to `compressed_output.txt`.
 Compression Modes
 
     auto_detect: Scans repository size, language mix, and complexity to choose an appropriate strategy.
