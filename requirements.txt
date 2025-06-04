@@ -1,3 +1,7 @@
 tiktoken
 openai
-argparse
+spacy
+gitpython
+python-dotenv
+BeautifulSoup4
+rich
